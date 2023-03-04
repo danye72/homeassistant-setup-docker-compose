@@ -1,0 +1,83 @@
+version: '3'
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: homeassistant/home-assistant:stable
+    volumes:
+    - /home/USR/docker/homeassistant/config:/config
+    environment:
+    - TZ=Europe/Rome
+    network_mode: host
+    restart: always
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto
+    volumes:
+    - "/home/USR/docker/mosquitto/config:/mosquitto/config"
+    - "/home/USR/docker/mosquitto/log:/mosquitto/log"
+    - "/home/USR/docker/mosquitto/data/:/mosquitto/data"
+    restart: always
+    network_mode: host
+
+  esphome:
+    container_name: esphome
+    image: esphome/esphome:latest
+    environment:
+      - TZ=Europe/Rome # offset = -08:00 / DST -07:00
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /volume1/docker/homeassistant/esphome:/config
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/USR/docker/portainer:/data
+    ports:
+      - 9000:9000
+      
+  filebrowser:
+    image: filebrowser/filebrowser
+    container_name: filebrowser
+    restart: unless-stopped
+    user: "${UID}:${GID}"
+    volumes:
+      - /home/USR/docker:/srv
+      - /home/USR/docker/filebrowser/filebrowser.json:/.filebrowser.json
+      - /home/USR/docker/filebrowser/filebrowser.db:/filebrowser.db
+    ports:
+      - 8081:8081
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    container_name: caddy
+    image: caddy:latest
+    volumes:
+    - "/home/USR/docker/caddy/Caddyfile:/etc/caddy/Caddyfile"
+    - "/home/USR/docker/caddy/data:/data"
+    environment:
+    - "TZ=Europe/Rome"
+    restart: always
+    network_mode: host
+
+
+  # zigbee2mqtt:
+  #   container_name: zigbee2mqtt
+  #   image: koenkk/zigbee2mqtt:latest
+  #   volumes:
+  #   - "/volume1/docker/zigbee2mqtt:/app/data"
+  #   # devices:
+  #   # - "/etc/ttyUSB0"
+  #   environment:
+  #   - "TZ=Europe/Rome"
+  #   network_mode: host
+  #   restart: always
